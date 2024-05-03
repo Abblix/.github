@@ -1,69 +1,67 @@
-# Abblix OIDC Server
+# Welcome to Abblix!
 
-**Abblix OIDC Server** is a robust .NET library that implements the OpenID Connect protocol on the server side. It is designed to meet high standards of flexibility, reusability, and reliability, using well-known software design patterns such as modular and hexagonal architectures. These patterns ensure that different parts of the library can work independently, improving the library's modularity, testability, and maintainability. The library also supports Dependency Injection using the standard .NET DI container, which aids in better organization and management of code. Specifically tailored for seamless integration with ASP.NET WebApi, Abblix OIDC Server employs standard controller classes, binding, and routing mechanisms to simplify the integration of OpenID Connect into your services.
+## About Us
 
-## NuGet Packages Description
+Founded in 2022 by seasoned experts with more than a decade of experience in information security and product development, Abblix is committed to delivering top-tier solutions that fulfill your diverse needs. Our team brings together expertise in cutting-edge technology and best practices to offer products and services designed to exceed expectations.
 
-- **Abblix.OIDC.Server**
-  This core package implements the OpenID Connect (OIDC) server functionality, providing a robust, compliant, and extensible framework for adding OIDC-based authentication and authorization to .NET applications. It supports various OIDC flows and configurations, tailored for modern application security needs.
+## Our Mission and Core Values
 
-- **Abblix.OIDC.Server.MVC**
-  Tailored for ASP.NET MVC applications, this package extends the Abblix.OIDC.Server to integrate smoothly with the MVC framework. It simplifies the process of securing MVC applications with OIDC, handling the intricacies of user authentication, session management, and secure redirections.
+### Innovation
+At Abblix, we prioritize staying ahead of technological advancements. Our commitment to innovation ensures that we continuously explore emerging standards and technologies to enhance our offerings.
 
-- **Abblix.JWT**
-  The Abblix.JWT package facilitates handling of JSON Web Tokens (JWTs) within the .NET ecosystem. It builds on top of `System.IdentityModel.Tokens.Jwt` to provide utilities for token validation, generation, and management, making it essential for securing web applications and services that rely on stateless authentication mechanisms.
+### Collaboration
+We believe in the power of teamwork and open communication. Abblix fosters a collaborative environment where sharing ideas and expertise is encouraged to achieve excellent results.
 
-- **Abblix.DependencyInjection**
-  This package extends Microsoft's default dependency injection (DI) framework. It allows for more advanced scenarios such as overriding dependencies directly via type, instance, or factory, aliasing services, and more complex service compositions and decorations. It integrates seamlessly, enhancing flexibility and maintainability of DI configurations in .NET applications.
+### Integrity
+Our approach to business is founded on honesty, transparency, and respect. We strive to build lasting relationships with our customers and partners by conducting our operations with utmost integrity.
 
-- **Abblix.Utils**
-  A utility package that provides common functionalities needed across various parts of the Abblix OIDC server implementation. These include helpers for logging, data manipulation, and other cross-cutting concerns that are essential for the operation and maintenance of security-focused services.
+### Passion
+Driven by a commitment to excellence, our passion is reflected in every aspect of our work. We are dedicated to surpassing customer expectations through high-quality service and attention to detail.
 
-## Implemented technologies and standards
+## Our Main Product: OIDC Server
 
-Abblix OIDC Server fully implements a comprehensive suite of advanced standards for authorization and security, providing a robust and secure environment for authorization data handling. Here are the key standards implemented in our product.
+### Introducing the Abblix OIDC Server
+The **Abblix OIDC Server** is a robust **.NET library** designed to implement the **OpenID Connect protocol** on the server side. This library is crafted to meet high standards of **flexibility, reusability, and reliability**, employing widely recognized software design patterns to ensure **modularity, testability, and maintainability**.
 
-- **The OAuth 2.0 Authorization Framework**: [RFC 6749](https://tools.ietf.org/html/rfc6749): Defines procedures for secure authorization of applications.
-- **The OAuth 2.0 Authorization Framework: Bearer Token Usage**: [RFC 6750](https://tools.ietf.org/html/rfc6750): Explains how to securely use bearer tokens to access resources.
-- **OAuth 2.0 Token Revocation**: [RFC 7009](https://tools.ietf.org/html/rfc7009): Describes methods to securely cancel access and refresh tokens.
-- **JSON Web Token (JWT)**: [RFC 7519](https://tools.ietf.org/html/rfc7519): Defines structure and use of JWTs for representing claims securely.
-- **JSON Web Token (JWT) Profile for OAuth 2.0 Client Authentication and Authorization Grants**: [RFC 7523](https://tools.ietf.org/html/rfc7523): Uses JWTs for secure client authentication and as authorization grants.
-- **Proof Key for Code Exchange by OAuth Public Clients**: [RFC 7636](https://tools.ietf.org/html/rfc7636): Improves security for public clients during authorization code exchange.
-- **OAuth 2.0 Token Introspection**: [RFC 7662](https://tools.ietf.org/html/rfc7662): Allows resource servers to verify the active state and metadata of tokens.
-- **OAuth 2.0 Dynamic Client Registration Protocol**: [RFC 7591](https://tools.ietf.org/html/rfc7591): Provides mechanisms for clients to register dynamically with authorization servers.
-- **OAuth 2.0 Token Exchange**: [RFC 8693](https://tools.ietf.org/html/rfc8693): Details the method for a secure exchange of one token type for another.
-- **JSON Web Token (JWT) Profile for OAuth 2.0 Access Tokens**: [RFC 9068](https://tools.ietf.org/html/rfc9068): Specifies the use of JWTs as OAuth 2.0 access tokens.
-- **The OAuth 2.0 Authorization Framework: JWT-Secured Authorization Request (JAR)**: [RFC 9101](https://tools.ietf.org/html/rfc9101): Secures authorization requests using JWTs.
-- **OAuth 2.0 Pushed Authorization Requests**: [RFC 9126](https://tools.ietf.org/html/rfc9126): Enhances security by allowing clients to push authorization requests directly to the server.
-- **OAuth 2.0 Authorization Server Issuer Identification**: [RFC 9207](https://tools.ietf.org/html/rfc9207): Ensures the authenticity of authorization servers to clients.
-- **OpenID Connect Core**: [Core Specification](https://openid.net/specs/openid-connect-core-1_0.html): Core functionality for OpenID Connect identity layer over OAuth 2.0.
-- **OpenID Connect Discovery**: [Detailed Specification](https://openid.net/specs/openid-connect-discovery-1_0.html): Enables clients to discover provider configurations dynamically.
-- **OpenID Connect RP-Initiated Logout**: [Detailed Specification](https://openid.net/specs/openid-connect-rpinitiated-1_0.html): Details logout initiated by relying parties.
-- **OpenID Connect Session Management**: [Detailed Specification](https://openid.net/specs/openid-connect-session-1_0.html): Manages user session states in identity providers.
-- **OpenID Connect Front-Channel Logout**: [Detailed Specification](https://openid.net/specs/openid-connect-frontchannel-1_0.html): Handles logout requests through front-channel communication.
-- **OpenID Connect Back-Channel Logout**: [Detailed Specification](https://openid.net/specs/openid-connect-backchannel-1_0.html): Manages logout processes using back-channel communication.
-- **OAuth 2.0 Multiple Response Type Encoding Practices**: [Core Specification](https://openid.net/specs/oauth-v2-multiple-response-types-1_0.html): Encodes different response types in OAuth 2.0 requests.
-- **OAuth 2.0 Form Post Response Mode**: [Core Specification](https://openid.net/specs/oauth-v2-form-post-response-mode-1_0.html): Transmits OAuth 2.0 responses via HTTP form posts.
-- **OpenID Connect Dynamic Client Registration**: [Detailed Specification](https://openid.net/specs/openid-connect-registration-1_0.html): Enables OpenID Connect clients to register dynamically with providers.
-- **OpenID Connect Core: Pairwise Pseudonymous Identifiers (PPID)**: [Core Specification](https://openid.net/specs/openid-connect-core-1_0.html#PairwiseAlg): Implements a privacy mechanism by generating unique identifiers for clients.
+#### Explore Our Repository
+For more details and to view the source code, visit our [GitHub repository](https://github.com/Abblix/Oidc.Server).
 
-## Getting Started
+### Key Features:
+- **Certified by the OpenID Foundation**: Ensures secure and reliable authentication standards. Our library is:
+  - Listed as a provider in the  [Certified OpenID Providers & Profiles](https://openid.net/certification/#OPENID-OP-P) and [Certified OpenID Providers for Logout Profiles](https://openid.net/certification/#OPENID-OP-LP)
+- **Effortless Integration**: Specifically tailored for ASP.NET WebApi to simplify integration.
+- **Hexagonal Architecture**: Adaptable to any specific Web API implementation for seamless integration.
+- **Open-Source Collaboration**: Promotes community involvement and continuous improvement.
+- **Modular Design**: Supports Dependency Injection for better code organization and lifecycle management.
 
-To better understand the Abblix OIDC Server product, we strongly recommend visiting our comprehensive [Documentation](https://docs.abblix.com/docs) site. Please explore the [Getting Started Guide](https://docs.abblix.com/docs/getting-started-guide), designed to provide you with all the necessary instructions and tips for a thorough understanding of our solution.
+### Why Choose Abblix OIDC Server?
+Choosing Abblix OIDC Server guarantees a streamlined approach to enhancing your service capabilities with a focus on security, flexibility, and user experience. It's ideal for businesses seeking robust authentication solutions that prioritize innovation and customer satisfaction.
 
-## Use our custom ChatGPT "Abblix OIDC Server Helper"
+#### Learn More About Abblix OIDC Server
+For more comprehensive information about the Abblix OIDC Server, including features, benefits, and support options, please visit our [product page](https://www.abblix.com/abblix-oidc-server).
 
-The **Abblix OIDC Server Helper** is a specialized ChatGPT designed to assist users and developers working with the Abblix OIDC Server. This AI-powered tool provides guidance, answers questions, and offers troubleshooting help regarding the OIDC Server implementation.
+## Why Choose Abblix?
 
-Explore the capabilities of this assistant by visiting the [Abblix OIDC Server Helper](https://chat.openai.com/g/g-1icXaNyOR-abblix-oidc-server-helper). Whether you're a new user trying to understand the basics or an experienced developer looking for specific technical details, this tool is here to help enhance your workflow and knowledge.
+### Proven Expertise
+Benefit from our extensive experience in the field of information security, ensuring that you receive knowledgeable and professional service.
 
-For more detailed interactions and to explore its full potential, access the assistant directly through the provided link.
+### Scalable Solutions
+Our products are designed to grow alongside your business. Abblix provides scalable solutions that adapt to changing market demands, offering the flexibility you need.
 
-## Contacts
+### Cutting-edge Technologies
+With Abblix, you can rely on secure and reliable products that leverage the latest in technological advancements.
 
-For more details about our products, services, or any general information regarding the Abblix OIDC Server, feel free to reach out to us. We are here to provide support and answer any questions you may have. Below are the best ways to contact our team:
+### Responsive Support
+Our support team is always ready to assist, ensuring swift and effective solutions to any challenges that may arise.
 
-- **Email**: Send us your inquiries or support requests at [support@abblix.com](mailto:support@abblix.com).
-- **Website**: Visit the official Abblix OIDC Server page for more information: [Abblix OIDC Server](https://www.abblix.com/abblix-oidc-server).
+### Customer-Oriented Approach
+Your needs and satisfaction are at the forefront of our priorities. Abblix values a customer-first approach in all our endeavors.
 
-We look forward to assisting you and ensuring your experience with our products is successful and enjoyable!
+### Trustworthy Partnership
+We are dedicated to fostering long-term relationships with our clients. Our business practices emphasize transparency, integrity, and respect.
+
+## Connect With Us
+
+Thank you for visiting our GitHub. For more information on Abblix and our services, please visit [our website](https://www.abblix.com) or contact us through our support channel at support@abblix.com.
+
+Let's build something great together!
