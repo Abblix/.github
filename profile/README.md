@@ -1,67 +1,37 @@
-# Welcome to Abblix!
+# Abblix
 
-## About Us
+Identity and authentication infrastructure for the .NET ecosystem, built by engineers with over a decade of experience in enterprise cybersecurity and large-scale financial services.
 
-Founded in 2022 by seasoned experts with more than a decade of experience in information security and product development, Abblix is committed to delivering top-tier solutions that fulfill your diverse needs. Our team brings together expertise in cutting-edge technology and best practices to offer products and services designed to exceed expectations.
+## Who we are
 
-## Our Mission and Core Values
+Abblix is a small, but ambitious engineering team. Everyone who writes code under the Abblix name has shipped security-critical systems before. Our backgrounds span enterprise cybersecurity and large-scale financial services: environments where a missed edge case becomes an incident. That shapes how we build: we read the RFC before we write the code, we run the OpenID conformance suite before we ship, and we keep the public repos current with what we actually ship.
 
-### Innovation
-At Abblix, we prioritize staying ahead of technological advancements. Our commitment to innovation ensures that we continuously explore emerging standards and technologies to enhance our offerings.
+The company was founded in 2022. Authentication and authorization infrastructure has been the focus from day one.
 
-### Collaboration
-We believe in the power of teamwork and open communication. Abblix fosters a collaborative environment where sharing ideas and expertise is encouraged to achieve excellent results.
+## What we build
 
-### Integrity
-Our approach to business is founded on honesty, transparency, and respect. We strive to build lasting relationships with our customers and partners by conducting our operations with utmost integrity.
+### Abblix OIDC Server
 
-### Passion
-Driven by a commitment to excellence, our passion is reflected in every aspect of our work. We are dedicated to surpassing customer expectations through high-quality service and attention to detail.
+[![OpenID Foundation Certified](https://resources.abblix.com/imgs/svg/abblix-oidc-server-openid-foundation-certification-mark.svg)](https://oidc.abblix.com/certified-profiles)
 
-## Our Main Product: OIDC Server
+A .NET library implementing OAuth 2.0 and OpenID Connect for ASP.NET Core applications. Certified by the OpenID Foundation across every [Regular profile](https://oidc.abblix.com/certified-profiles) (Basic, Implicit, Hybrid, Config, Dynamic, Form Post, 3rd Party-Init) and every [Logout profile](https://oidc.abblix.com/certified-logout-profiles) (RP-Initiated, Session, Front-Channel, Back-Channel). 634 conformance tests, zero skipped, zero warnings.
 
-### Introducing the Abblix OIDC Server
-The **Abblix OIDC Server** is a robust **.NET library** designed to implement the **OpenID Connect protocol** on the server side. This library is crafted to meet high standards of **flexibility, reusability, and reliability**, employing widely recognized software design patterns to ensure **modularity, testability, and maintainability**.
+Protocol coverage includes RFC 6749 and RFC 6750 (core OAuth 2.0), RFC 7636 (PKCE), RFC 9126 (PAR), RFC 9101 (JAR), RFC 8705 (MTLS and certificate-bound tokens), RFC 8628 (Device Authorization Grant), RFC 9068 (JWT access tokens), OIDC Core, Discovery, Session Management, and CIBA. The full list lives at [docs.abblix.com/implemented-standards](https://docs.abblix.com/implemented-standards).
 
-#### Explore Our Repository
-For more details and to view the source code, visit our [GitHub repository](https://github.com/Abblix/Oidc.Server).
+The library is built around hexagonal architecture with dependency injection as a first-class concern, so it fits cleanly into any ASP.NET Core Web API. Extension methods use `TryAdd` and `TryAddEnumerable`, so host-defined implementations always win over library defaults.
 
-### Key Features:
-- **Certified by the OpenID Foundation**: Ensures secure and reliable authentication standards. Our library is:
-  - Listed as a provider in the  [Certified OpenID Providers & Profiles](https://openid.net/certification/#OPENID-OP-P) and [Certified OpenID Providers for Logout Profiles](https://openid.net/certification/#OPENID-OP-LP)
-- **Effortless Integration**: Specifically tailored for ASP.NET WebApi to simplify integration.
-- **Hexagonal Architecture**: Adaptable to any specific Web API implementation for seamless integration.
-- **Open-Source Collaboration**: Promotes community involvement and continuous improvement.
-- **Modular Design**: Supports Dependency Injection for better code organization and lifecycle management.
+- Repository: https://github.com/Abblix/Oidc.Server
+- Product page: https://www.abblix.com/abblix-oidc-server
+- Documentation: https://docs.abblix.com
 
-### Why Choose Abblix OIDC Server?
-Choosing Abblix OIDC Server guarantees a streamlined approach to enhancing your service capabilities with a focus on security, flexibility, and user experience. It's ideal for businesses seeking robust authentication solutions that prioritize innovation and customer satisfaction.
+## How we work
 
-#### Learn More About Abblix OIDC Server
-For more comprehensive information about the Abblix OIDC Server, including features, benefits, and support options, please visit our [product page](https://www.abblix.com/abblix-oidc-server).
+We track OAuth Working Group and OpenID Foundation drafts. When a standard reaches Final, we implement it against the published text, test it against the conformance suite where one exists, and write documentation an integrator can use without reverse-engineering the source. Breaking changes are rare; when they happen, the migration path lands in the release notes before the binary lands on NuGet.
 
-## Why Choose Abblix?
+The repos are public. Issues and pull requests get read by the people who write the code.
 
-### Proven Expertise
-Benefit from our extensive experience in the field of information security, ensuring that you receive knowledgeable and professional service.
+## Contact
 
-### Scalable Solutions
-Our products are designed to grow alongside your business. Abblix provides scalable solutions that adapt to changing market demands, offering the flexibility you need.
-
-### Cutting-edge Technologies
-With Abblix, you can rely on secure and reliable products that leverage the latest in technological advancements.
-
-### Responsive Support
-Our support team is always ready to assist, ensuring swift and effective solutions to any challenges that may arise.
-
-### Customer-Oriented Approach
-Your needs and satisfaction are at the forefront of our priorities. Abblix values a customer-first approach in all our endeavors.
-
-### Trustworthy Partnership
-We are dedicated to fostering long-term relationships with our clients. Our business practices emphasize transparency, integrity, and respect.
-
-## Connect With Us
-
-Thank you for visiting our GitHub. For more information on Abblix and our services, please visit [our website](https://www.abblix.com) or contact us through our support channel at support@abblix.com.
-
-Let's build something great together!
+- Website: https://www.abblix.com
+- Support: support@abblix.com
+- Issues: https://github.com/Abblix/Oidc.Server/issues
