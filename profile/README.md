@@ -18,7 +18,7 @@ A .NET library implementing OAuth 2.0 and OpenID Connect for ASP.NET Core applic
 
 Protocol coverage includes RFC 6749 and RFC 6750 (core OAuth 2.0), RFC 7636 (PKCE), RFC 9126 (PAR), RFC 9101 (JAR), RFC 8705 (MTLS and certificate-bound tokens), RFC 8628 (Device Authorization Grant), RFC 9068 (JWT access tokens), OIDC Core, Discovery, Session Management, and CIBA. The full list lives at [docs.abblix.com/implemented-standards](https://docs.abblix.com/implemented-standards).
 
-The library is built around hexagonal architecture with dependency injection as a first-class concern, so it fits cleanly into any ASP.NET Core Web API. Extension methods use `TryAdd` and `TryAddEnumerable`, so host-defined implementations always win over library defaults.
+The library is built around hexagonal architecture and designed to fit cleanly into any ASP.NET Core Web API.
 
 - Repository: https://github.com/Abblix/Oidc.Server
 - Product page: https://www.abblix.com/abblix-oidc-server
