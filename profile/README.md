@@ -1,6 +1,6 @@
 # Abblix
 
-Identity and authentication infrastructure for the .NET ecosystem, built by engineers with over a decade of experience in enterprise cybersecurity and large-scale financial services.
+Identity and authentication infrastructure: a certified OpenID Connect library for .NET and a free cloud sign-in service that runs on it. Built by engineers with over a decade of experience in enterprise cybersecurity and large-scale financial services.
 
 ## Who we are
 
@@ -32,6 +32,19 @@ Full architectural breakdown: [Understanding the Architecture](https://docs.abbl
 - Product page: https://www.abblix.com/abblix-oidc-server
 - Documentation: https://docs.abblix.com
 
+### Abblix Account
+
+A free cloud authentication service with no usage limits, built on Abblix OIDC Server. We run it in production ourselves. It is a standard OpenID Connect provider: a website or web app connects as an ordinary OIDC client and gets hosted pages for registration, sign-in, email verification, and terms-of-service acceptance.
+
+People sign in with a passkey, a password, an email or Telegram code, or an authenticator app, optionally followed by a second step, or through Google, Apple, Microsoft, Facebook, VK, or Yandex. Each user sees their active sessions and can end any of them, manage linked accounts, export their data (GDPR/CCPA), or delete the account.
+
+To connect a site, send your company name, an SVG logo, links to your terms and privacy policy, and the external providers you want through the [contact form](https://www.abblix.com/contact#contact-form).
+
+[Quorvel Coffee](https://quorvel.abblix.com) is a demo shop with Abblix Account already connected, if you want to see it on a real site.
+
+- Product page: https://www.abblix.com/account
+- OpenID Connect discovery: https://account.abblix.com/.well-known/openid-configuration
+
 ## How we work
 
 We track OAuth Working Group and OpenID Foundation drafts. When a standard reaches Final, we implement it against the published text, test it against the conformance suite where one exists, and write documentation an integrator can use without reverse-engineering the source. Breaking changes are rare; when they happen, the migration path lands in the release notes before the binary lands on NuGet.
@@ -41,5 +54,6 @@ The repos are public. Issues and pull requests get read by the people who write 
 ## Contact
 
 - Website: https://www.abblix.com
-- Support: support@abblix.com
-- Issues: https://github.com/Abblix/Oidc.Server/issues
+- Support for both products: support@abblix.com
+- Discussions: https://github.com/orgs/Abblix/discussions
+- OIDC Server issues: https://github.com/Abblix/Oidc.Server/issues
