@@ -168,6 +168,23 @@ try:
     r = run(root)
     check(r.returncode == 0, "shell: of a workflow step is not evaluated by the runner and passes", r.stdout + r.stderr)
 
+    # an input the caller declares as executed: refused on any action, and only once it is declared
+    wrapper_step = ("        uses: some/wrapper@v1\n        with:\n          build-command: docker build --build-arg \"X=${{ github.run_id }}\" .\n"
+                    "          note: ${{ github.sha }}")
+    declared = dict(clean_env(), EXECUTED_INPUTS="build-command")
+    root = make_repo("declared", {WORKFLOW: workflow(wrapper_step)})
+    r = run(root, env=declared)
+    check(r.returncode == 1 and f"{WORKFLOW}:10: " in r.stdout and "with.build-command" in r.stdout and "with.note" not in r.stdout,
+          "a declared input holding an expression is refused with its line, and its undeclared neighbour is not", r.stdout + r.stderr)
+    r = run(root)
+    check(r.returncode == 0, "the same input is data until the caller declares it", r.stdout + r.stderr)
+    root = make_repo("declared-clean", {WORKFLOW: workflow("        uses: some/wrapper@v1\n        with:\n          build-command: docker build --build-arg \"X=${RUN}\" .")})
+    r = run(root, env=declared)
+    check(r.returncode == 0 and "OK:" in r.stdout, "a declared input without an expression passes", r.stdout + r.stderr)
+    two_names = dict(clean_env(), EXECUTED_INPUTS="other-command\nbuild-command")
+    r = run(make_repo("declared-two", {WORKFLOW: workflow(wrapper_step)}), env=two_names)
+    check(r.returncode == 1 and "with.build-command" in r.stdout, "several declared names, separated by a line break, are all read", r.stdout + r.stderr)
+
     # empty sweep is a failure, not a clean result
     root = make_repo("empty", {"README.md": "# nothing\n"})
     r = run(root)
@@ -198,6 +215,7 @@ try:
         "block scalar line lost (the value's first line only)": ("position = text.find(EXPRESSION_OPENING, first, last)", "position = first"),
         "line breaks not normalised": ('return text.replace("\\r\\n", "\\n").replace("\\r", "\\n")', "return text"),
         "lines counted by splitlines": ('return text.count("\\n", 0, position) + 1', 'return len(text[:position].replace("\\n", "\\n#").splitlines())'),
+        "declared inputs dropped": ('values.append((f"with.{name}", inputs[name], span_in(inputs, name)))', "pass"),
         "composite actions dropped": ('if isinstance(runs, dict) and isinstance(runs.get("steps"), list):\n        found.append(("composite action", runs["steps"], True))', "pass"),
     }
     for label, (old, new) in mutations.items():
@@ -238,6 +256,8 @@ try:
     step = doc["runs"]["steps"][0]
     check(doc["runs"]["using"] == "composite" and "${{" not in step["run"] and step["env"]["ACTION_PATH"] == "${{ github.action_path }}", "the action binds its path through env and keeps run: free of expressions")
     check("lint-no-inline-secrets.py" in step["run"] and doc["inputs"]["root"]["default"] == ".", "the action runs the script beside it on the repository root by default")
+    check(doc["inputs"]["executed-inputs"]["default"] == "" and step["env"]["EXECUTED_INPUTS"] == "${{ inputs.executed-inputs }}" and "${{" not in text.split("description:", 1)[1].split("inputs:", 1)[0],
+          "the declared names reach the script through env, default to none, and the description holds no expression token")
 finally:
     shutil.rmtree(work, ignore_errors=True)
 

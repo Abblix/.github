@@ -4,7 +4,8 @@ description: >-
   (the template token: a dollar sign and two opening braces) inside a value the runner executes
   as program text. Those values are run:, a composite step's shell:, a job's defaults.run.shell,
   with.script of github-script, with.args and with.entrypoint of a docker:// step, and runs.args
-  of a Docker action.
+  of a Docker action. The caller can add inputs of its own actions that run as a command, see
+  the input executed-inputs.
 
   GitHub substitutes the expression before the program parses the text, so a value with a quote
   or a backtick in it becomes code. The rule is the whole check: no expression in those values,
@@ -25,6 +26,14 @@ inputs:
     description: Repository root to read, relative to the job's working directory.
     required: false
     default: '.'
+  executed-inputs:
+    description: >-
+      Names of with: inputs that an action of the caller passes to a shell or to eval, separated by
+      whitespace, for example build-command. The check cannot read an action from another
+      repository, so the caller says which of its inputs run as a command. An input with such a name
+      is checked on every step that sets it, whatever action the step uses.
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -34,6 +43,7 @@ runs:
       env:
         ACTION_PATH: ${{ github.action_path }}
         LINT_ROOT: ${{ inputs.root }}
+        EXECUTED_INPUTS: ${{ inputs.executed-inputs }}
       run: |
         set -euo pipefail
         python3 "${ACTION_PATH}/lint-no-inline-secrets.py" "$LINT_ROOT"

@@ -21,7 +21,11 @@ The values read as program text:
 - `with.args` and `with.entrypoint` of a `docker://` step, the command line of the container;
 - `runs.args` of a Docker container action, which the runner's action schema evaluates with the
   `inputs` context and hands to the entrypoint, a shell whenever the entrypoint is `sh -c`. Its
-  `entrypoint`, `pre-entrypoint` and `post-entrypoint` are plain strings there, never evaluated.
+  `entrypoint`, `pre-entrypoint` and `post-entrypoint` are plain strings there, never evaluated;
+- `with.<name>` of any step, for each name the caller lists in the environment variable
+  EXECUTED_INPUTS (the action input `executed-inputs`). An action that hands one of its inputs to
+  `sh -c` or `eval` holds program text there, and only its owner knows which input that is. The
+  check cannot read an action that lives in another repository, so the caller names the input.
 
 The rule is the whole of it: NO expression inside those values, whatever it reads. A list of
 dangerous contexts cannot be completed - `secrets['X']`, `toJSON(secrets)` and
@@ -151,8 +155,10 @@ def token_line(span: Span | None, text: str | None) -> int | None:
     return text.count("\n", 0, position) + 1
 
 
-def executed_values(step: dict, shell_evaluated: bool) -> list[tuple[str, object, Span | None]]:
-    """The (key, value, source lines) triples of a step that the runner or its action executes as program text."""
+def executed_values(step: dict, shell_evaluated: bool, executed_inputs: tuple[str, ...] = ()) -> list[tuple[str, object, Span | None]]:
+    """The (key, value, source lines) triples of a step that the runner or its action executes as program text.
+
+    `executed_inputs` are the input names the caller says its actions execute; they apply to every action."""
     values: list[tuple[str, object, Span | None]] = [("run:", step.get("run"), span_in(step, "run"))]
     if shell_evaluated:
         values.append(("shell:", step.get("shell"), span_in(step, "shell")))
@@ -168,6 +174,9 @@ def executed_values(step: dict, shell_evaluated: bool) -> list[tuple[str, object
         if action.startswith(DOCKER_IMAGE):
             values.append(("with.args", inputs.get("args"), span_in(inputs, "args")))
             values.append(("with.entrypoint", inputs.get("entrypoint"), span_in(inputs, "entrypoint")))
+        for name in executed_inputs:
+            if name in inputs:
+                values.append((f"with.{name}", inputs[name], span_in(inputs, name)))
     return values
 
 
@@ -181,7 +190,7 @@ def where(path: str, span: Span | None, text: str | None) -> str:
     return f"{path}:{line}" if line else path
 
 
-def violations_in(doc, path: str, text: str | None = None) -> list[str]:
+def violations_in(doc, path: str, text: str | None = None, executed_inputs: tuple[str, ...] = ()) -> list[str]:
     """The findings of one parsed document. `text` is the source it was parsed from (after normalize_line_breaks):
     with it every finding names the line the expression is on, without it only the file."""
     if not isinstance(doc, dict):
@@ -193,7 +202,7 @@ def violations_in(doc, path: str, text: str | None = None) -> list[str]:
             if not isinstance(step, dict):
                 continue
             step_label = step.get("name") or f"step #{idx}"
-            for key, value, span in executed_values(step, shell_evaluated):
+            for key, value, span in executed_values(step, shell_evaluated, executed_inputs):
                 if holds_expression(value):
                     violations.append(f"{where(path, span, text)}: {context} / {step_label}: expression inside {key}")
 
@@ -248,13 +257,13 @@ def step_lists(doc: dict) -> list[tuple[str, list, bool]]:
     return found
 
 
-def scan_file(root: pathlib.Path, rel: str) -> list[str]:
+def scan_file(root: pathlib.Path, rel: str, executed_inputs: tuple[str, ...] = ()) -> list[str]:
     text = normalize_line_breaks((root / rel).read_text(encoding="utf-8"))
     try:
         doc = load_with_lines(text)
     except yaml.YAMLError as exc:
         return [f"{rel}: YAML parse error: {exc}"]
-    return violations_in(doc, rel, text)
+    return violations_in(doc, rel, text, executed_inputs)
 
 
 def tracked_files(root: pathlib.Path, isolated: bool = False) -> list[str]:
@@ -450,7 +459,28 @@ def self_test() -> None:
     if noisy:
         sys.exit(f"lint-no-inline-secrets: a clean step is flagged ({', '.join(noisy)}) - the check cries wolf.")
 
+    self_test_declared_inputs()
     self_test_discovery()
+
+
+def self_test_declared_inputs() -> None:
+    """An input the caller names is checked on any action; an input it does not name is data."""
+    source = normalize_line_breaks(
+        "jobs:\n  a:\n    steps:\n      - uses: some/wrapper@v1\n        with:\n"
+        '          build-command: docker build --build-arg "X=${{ github.run_id }}" .\n'
+        "          note: ${{ github.sha }}\n"
+    )
+
+    def findings(name: str, declared: tuple[str, ...]) -> list[str]:
+        return self_test_row(name, lambda: violations_in(load_with_lines(source), "planted", source, declared))
+
+    named = findings("declared input", ("build-command",))
+    if not any(f.startswith("planted:6: ") and "with.build-command" in f for f in named):
+        sys.exit("lint-no-inline-secrets: a planted expression in a declared executed input is not found - the check is broken.")
+    if len(named) != 1:
+        sys.exit("lint-no-inline-secrets: an input that was not declared is flagged next to a declared one - the check cries wolf.")
+    if findings("undeclared input", ()):
+        sys.exit("lint-no-inline-secrets: an input nobody declared is flagged - the check cries wolf.")
 
 
 def self_test_discovery() -> None:
@@ -561,9 +591,10 @@ def main(argv: list[str]) -> int:
     if not files:
         print("no workflow or action files found - the check is looking in the wrong place")
         return 1
+    executed_inputs = tuple(os.environ.get("EXECUTED_INPUTS", "").split())
     all_violations: list[str] = []
     for rel in files:
-        all_violations.extend(scan_file(root, rel))
+        all_violations.extend(scan_file(root, rel, executed_inputs))
 
     if all_violations:
         print(
