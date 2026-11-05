@@ -25,7 +25,8 @@ The values read as program text:
 - `with.<name>` of any step, for each name the caller lists in the environment variable
   EXECUTED_INPUTS (the action input `executed-inputs`). An action that hands one of its inputs to
   `sh -c` or `eval` holds program text there, and only its owner knows which input that is. The
-  check cannot read an action that lives in another repository, so the caller names the input.
+  check cannot read an action that lives in another repository, so the caller names the input. A
+  declared name that no step sets fails the run, since a name that matches nothing protects nothing.
 
 The rule is the whole of it: NO expression inside those values, whatever it reads. A list of
 dangerous contexts cannot be completed - `secrets['X']`, `toJSON(secrets)` and
@@ -160,10 +161,16 @@ def input_values(inputs: dict, name: str) -> list[tuple[str, object, Span | None
     return [(f"with.{name}", inputs[key], span_in(inputs, key)) for key in inputs if isinstance(key, str) and key.lower() == name.lower()]
 
 
-def executed_values(step: dict, shell_evaluated: bool, executed_inputs: tuple[str, ...] = ()) -> list[tuple[str, object, Span | None]]:
+def unmatched_inputs(executed_inputs: tuple[str, ...], seen: set[str]) -> list[str]:
+    """The declared names that no step set. A name that matches nothing protects nothing, and the silence would read as a clean check."""
+    return [name for name in executed_inputs if name.lower() not in seen]
+
+
+def executed_values(step: dict, shell_evaluated: bool, executed_inputs: tuple[str, ...] = (), seen: set[str] | None = None) -> list[tuple[str, object, Span | None]]:
     """The (key, value, source lines) triples of a step that the runner or its action executes as program text.
 
-    `executed_inputs` are the input names the caller says its actions execute; they apply to every action."""
+    `executed_inputs` are the input names the caller says its actions execute; they apply to every action.
+    `seen` collects the lower-cased declared names that some step set."""
     values: list[tuple[str, object, Span | None]] = [("run:", step.get("run"), span_in(step, "run"))]
     if shell_evaluated:
         values.append(("shell:", step.get("shell"), span_in(step, "shell")))
@@ -180,7 +187,10 @@ def executed_values(step: dict, shell_evaluated: bool, executed_inputs: tuple[st
             values.extend(input_values(inputs, "args"))
             values.extend(input_values(inputs, "entrypoint"))
         for name in executed_inputs:
-            values.extend(input_values(inputs, name))
+            found = input_values(inputs, name)
+            if found and seen is not None:
+                seen.add(name.lower())
+            values.extend(found)
     return values
 
 
@@ -194,7 +204,7 @@ def where(path: str, span: Span | None, text: str | None) -> str:
     return f"{path}:{line}" if line else path
 
 
-def violations_in(doc, path: str, text: str | None = None, executed_inputs: tuple[str, ...] = ()) -> list[str]:
+def violations_in(doc, path: str, text: str | None = None, executed_inputs: tuple[str, ...] = (), seen: set[str] | None = None) -> list[str]:
     """The findings of one parsed document. `text` is the source it was parsed from (after normalize_line_breaks):
     with it every finding names the line the expression is on, without it only the file."""
     if not isinstance(doc, dict):
@@ -206,7 +216,7 @@ def violations_in(doc, path: str, text: str | None = None, executed_inputs: tupl
             if not isinstance(step, dict):
                 continue
             step_label = step.get("name") or f"step #{idx}"
-            for key, value, span in executed_values(step, shell_evaluated, executed_inputs):
+            for key, value, span in executed_values(step, shell_evaluated, executed_inputs, seen):
                 if holds_expression(value):
                     violations.append(f"{where(path, span, text)}: {context} / {step_label}: expression inside {key}")
 
@@ -261,13 +271,13 @@ def step_lists(doc: dict) -> list[tuple[str, list, bool]]:
     return found
 
 
-def scan_file(root: pathlib.Path, rel: str, executed_inputs: tuple[str, ...] = ()) -> list[str]:
+def scan_file(root: pathlib.Path, rel: str, executed_inputs: tuple[str, ...] = (), seen: set[str] | None = None) -> list[str]:
     text = normalize_line_breaks((root / rel).read_text(encoding="utf-8"))
     try:
         doc = load_with_lines(text)
     except yaml.YAMLError as exc:
         return [f"{rel}: YAML parse error: {exc}"]
-    return violations_in(doc, rel, text, executed_inputs)
+    return violations_in(doc, rel, text, executed_inputs, seen)
 
 
 def tracked_files(root: pathlib.Path, isolated: bool = False) -> list[str]:
@@ -488,10 +498,16 @@ def self_test_declared_inputs() -> None:
         '          Build-Command: docker build --build-arg "X=${{ github.run_id }}" .\n'
     )
 
-    def findings(name: str, declared: tuple[str, ...]) -> list[str]:
-        return self_test_row(name, lambda: violations_in(load_with_lines(source), "planted", source, declared))
+    seen: set[str] = set()
 
-    named = findings("declared input", ("build-command",))
+    def findings(name: str, declared: tuple[str, ...], seen_names: set[str] | None = None) -> list[str]:
+        return self_test_row(name, lambda: violations_in(load_with_lines(source), "planted", source, declared, seen_names))
+
+    named = findings("declared input", ("build-command",), seen)
+    if unmatched_inputs(("build-command",), seen):
+        sys.exit("lint-no-inline-secrets: a declared name that a step sets is reported as unmatched - the check cries wolf.")
+    if unmatched_inputs(("build-command", "no-such-input"), seen) != ["no-such-input"]:
+        sys.exit("lint-no-inline-secrets: a declared name that no step sets is not reported - the check is broken.")
     if not (any(f.startswith("planted:6: ") for f in named) and any(f.startswith("planted:10: ") for f in named)):
         sys.exit("lint-no-inline-secrets: a planted expression in a declared executed input is not found, in the spelling given or in another case - the check is broken.")
     if len(named) != 2:
@@ -610,9 +626,11 @@ def main(argv: list[str]) -> int:
         return 1
     executed_inputs = tuple(os.environ.get("EXECUTED_INPUTS", "").split())
     all_violations: list[str] = []
+    seen: set[str] = set()
     for rel in files:
-        all_violations.extend(scan_file(root, rel, executed_inputs))
+        all_violations.extend(scan_file(root, rel, executed_inputs, seen))
 
+    unmatched = unmatched_inputs(executed_inputs, seen)
     if all_violations:
         print(
             "GitHub Actions expression detected inside a value executed as program text.\n"
@@ -622,6 +640,13 @@ def main(argv: list[str]) -> int:
         )
         for violation in all_violations:
             print(f"  - {printable(violation)}")
+    if unmatched:
+        print(
+            "A declared executed input is set by no step in this repository: "
+            f"{', '.join(printable(name) for name in unmatched)}.\n"
+            "A name that matches nothing protects nothing: fix its spelling (the action may have renamed the input) or drop it from executed-inputs."
+        )
+    if all_violations or unmatched:
         return 1
 
     print(f"OK: no expression inside an executed value across {len(files)} workflow/action file(s)")

@@ -190,6 +190,15 @@ try:
     check(r.returncode == 1 and f"{WORKFLOW}:10: " in r.stdout, "an input written in another case than the declared name is read the same: GitHub matches input names without regard to case", r.stdout + r.stderr)
     r = run(make_repo("declared-cased-name", {WORKFLOW: workflow(wrapper_step)}), env=dict(clean_env(), EXECUTED_INPUTS="BUILD-COMMAND"))
     check(r.returncode == 1 and f"{WORKFLOW}:10: " in r.stdout, "a name declared in another case than the input is read the same", r.stdout + r.stderr)
+    # a declared name that no step sets protects nothing: the run fails and names it, and a name that is set passes beside it
+    r = run(make_repo("declared-unmatched", {WORKFLOW: workflow("        run: echo hello")}), env=declared)
+    check(r.returncode == 1 and "build-command" in r.stdout and "set by no step" in r.stdout, "a declared name that no step sets fails the run and is named", r.stdout + r.stderr)
+    r = run(make_repo("declared-one-unmatched", {WORKFLOW: workflow(wrapper_step.replace("${{ github.run_id }}", "${RUN}").replace("${{ github.sha }}", "x"))}),
+            env=dict(clean_env(), EXECUTED_INPUTS="build-command typo-command"))
+    check(r.returncode == 1 and "typo-command" in r.stdout and "build-command," not in r.stdout and "OK:" not in r.stdout,
+          "of two declared names, the one no step sets is named and the other is not", r.stdout + r.stderr)
+    r = run(make_repo("declared-unmatched-other-case", {WORKFLOW: workflow("        uses: some/wrapper@v1\n        with:\n          BUILD-COMMAND: docker build .")}), env=declared)
+    check(r.returncode == 0 and "OK:" in r.stdout, "a declared name set under another case counts as set", r.stdout + r.stderr)
     two_names = dict(clean_env(), EXECUTED_INPUTS="other-command\nbuild-command")
     r = run(make_repo("declared-two", {WORKFLOW: workflow(wrapper_step)}), env=two_names)
     check(r.returncode == 1 and "with.build-command" in r.stdout, "several declared names, separated by a line break, are all read", r.stdout + r.stderr)
@@ -225,7 +234,8 @@ try:
         "block scalar line lost (the value's first line only)": ("position = text.find(EXPRESSION_OPENING, first, last)", "position = first"),
         "line breaks not normalised": ('return text.replace("\\r\\n", "\\n").replace("\\r", "\\n")', "return text"),
         "lines counted by splitlines": ('return text.count("\\n", 0, position) + 1', 'return len(text[:position].replace("\\n", "\\n#").splitlines())'),
-        "declared inputs dropped": ("            values.extend(input_values(inputs, name))", "            pass"),
+        "declared inputs dropped": ("            values.extend(found)", "            pass"),
+        "unmatched declared names not reported": ("return [name for name in executed_inputs if name.lower() not in seen]", "return []"),
         "composite actions dropped": ('if isinstance(runs, dict) and isinstance(runs.get("steps"), list):\n        found.append(("composite action", runs["steps"], True))', "pass"),
     }
     for label, (old, new) in mutations.items():

@@ -31,7 +31,8 @@ inputs:
       Names of with: inputs that an action of the caller passes to a shell or to eval, separated by
       whitespace, for example build-command. The check cannot read an action from another
       repository, so the caller says which of its inputs run as a command. An input with such a name
-      is checked on every step that sets it, whatever action the step uses.
+      is checked on every step that sets it, whatever action the step uses. A name that no step
+      sets fails the run: it would protect nothing, which happens when an action renames the input.
     required: false
     default: ''
 
