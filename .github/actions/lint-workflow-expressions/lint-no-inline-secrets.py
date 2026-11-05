@@ -155,6 +155,11 @@ def token_line(span: Span | None, text: str | None) -> int | None:
     return text.count("\n", 0, position) + 1
 
 
+def input_values(inputs: dict, name: str) -> list[tuple[str, object, Span | None]]:
+    """The values of the with: keys that name the input `name`. GitHub matches input names without regard to case, so `Script:` is `script:`."""
+    return [(f"with.{name}", inputs[key], span_in(inputs, key)) for key in inputs if isinstance(key, str) and key.lower() == name.lower()]
+
+
 def executed_values(step: dict, shell_evaluated: bool, executed_inputs: tuple[str, ...] = ()) -> list[tuple[str, object, Span | None]]:
     """The (key, value, source lines) triples of a step that the runner or its action executes as program text.
 
@@ -170,13 +175,12 @@ def executed_values(step: dict, shell_evaluated: bool, executed_inputs: tuple[st
         # GitHub resolves owner and repository names case-insensitively.
         action = uses.split("@", 1)[0].lower()
         if action == GITHUB_SCRIPT:
-            values.append(("with.script", inputs.get("script"), span_in(inputs, "script")))
+            values.extend(input_values(inputs, "script"))
         if action.startswith(DOCKER_IMAGE):
-            values.append(("with.args", inputs.get("args"), span_in(inputs, "args")))
-            values.append(("with.entrypoint", inputs.get("entrypoint"), span_in(inputs, "entrypoint")))
+            values.extend(input_values(inputs, "args"))
+            values.extend(input_values(inputs, "entrypoint"))
         for name in executed_inputs:
-            if name in inputs:
-                values.append((f"with.{name}", inputs[name], span_in(inputs, name)))
+            values.extend(input_values(inputs, name))
     return values
 
 
@@ -382,6 +386,15 @@ def self_test() -> None:
             "jobs:\n  a:\n    steps:\n      - uses: docker://alpine:3\n"
             "        with:\n          args: sh -c \"echo ${{ inputs.x }}\"\n"
         ),
+        # The runner matches input names without regard to case, so the same values under another spelling run all the same.
+        "github-script, input name in another case": (
+            "jobs:\n  a:\n    steps:\n      - uses: actions/github-script@v7\n"
+            "        with:\n          Script: console.log('${{ inputs.x }}')\n"
+        ),
+        "docker args, input name in another case": (
+            "jobs:\n  a:\n    steps:\n      - uses: docker://alpine:3\n"
+            "        with:\n          ARGS: sh -c \"echo ${{ inputs.x }}\"\n"
+        ),
         "docker entrypoint": (
             "jobs:\n  a:\n    steps:\n      - uses: docker://alpine:3\n"
             "        with:\n          entrypoint: ${{ inputs.x }}\n"
@@ -410,6 +423,8 @@ def self_test() -> None:
         "github-script": 6,
         "docker args": 6,
         "docker entrypoint": 6,
+        "github-script, input name in another case": 6,
+        "docker args, input name in another case": 6,
         "docker action args, not the first": 7,
         "unicode line breaks before the value": 5,
         "carriage returns before the value": 5,
@@ -469,15 +484,17 @@ def self_test_declared_inputs() -> None:
         "jobs:\n  a:\n    steps:\n      - uses: some/wrapper@v1\n        with:\n"
         '          build-command: docker build --build-arg "X=${{ github.run_id }}" .\n'
         "          note: ${{ github.sha }}\n"
+        "      - uses: some/wrapper@v1\n        with:\n"
+        '          Build-Command: docker build --build-arg "X=${{ github.run_id }}" .\n'
     )
 
     def findings(name: str, declared: tuple[str, ...]) -> list[str]:
         return self_test_row(name, lambda: violations_in(load_with_lines(source), "planted", source, declared))
 
     named = findings("declared input", ("build-command",))
-    if not any(f.startswith("planted:6: ") and "with.build-command" in f for f in named):
-        sys.exit("lint-no-inline-secrets: a planted expression in a declared executed input is not found - the check is broken.")
-    if len(named) != 1:
+    if not (any(f.startswith("planted:6: ") for f in named) and any(f.startswith("planted:10: ") for f in named)):
+        sys.exit("lint-no-inline-secrets: a planted expression in a declared executed input is not found, in the spelling given or in another case - the check is broken.")
+    if len(named) != 2:
         sys.exit("lint-no-inline-secrets: an input that was not declared is flagged next to a declared one - the check cries wolf.")
     if findings("undeclared input", ()):
         sys.exit("lint-no-inline-secrets: an input nobody declared is flagged - the check cries wolf.")

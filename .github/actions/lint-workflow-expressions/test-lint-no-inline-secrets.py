@@ -73,6 +73,9 @@ try:
         "with.script of github-script": (WORKFLOW,
                                          workflow("        uses: actions/github-script@v7\n        with:\n          script: console.log('${{ github.event.issue.title }}')"),
                                          workflow("        uses: actions/github-script@v7\n        with:\n          script: console.log('hello')"), "w.yml"),
+        "with.script of github-script, input name in another case": (WORKFLOW,
+                                         workflow("        uses: actions/github-script@v7\n        with:\n          Script: console.log('${{ github.event.issue.title }}')"),
+                                         workflow("        uses: actions/github-script@v7\n        with:\n          Script: console.log('hello')"), "w.yml"),
         "with.args of a docker step": (WORKFLOW,
                                        workflow("        uses: docker://alpine:3\n        with:\n          args: sh -c \"echo ${{ inputs.x }}\""),
                                        workflow("        uses: docker://alpine:3\n        with:\n          args: sh -c \"echo hi\""), "w.yml"),
@@ -91,6 +94,7 @@ try:
         "shell of a composite step": 6,
         "defaults.run.shell of a job": 8,
         "with.script of github-script": 10,
+        "with.script of github-script, input name in another case": 10,
         "with.args of a docker step": 10,
         "runs.args of a docker action": 8,
         "run of a composite action nested two levels deep": 5,
@@ -181,6 +185,11 @@ try:
     root = make_repo("declared-clean", {WORKFLOW: workflow("        uses: some/wrapper@v1\n        with:\n          build-command: docker build --build-arg \"X=${RUN}\" .")})
     r = run(root, env=declared)
     check(r.returncode == 0 and "OK:" in r.stdout, "a declared input without an expression passes", r.stdout + r.stderr)
+    cased = workflow("        uses: some/wrapper@v1\n        with:\n          Build-Command: docker build --build-arg \"X=${{ github.run_id }}\" .")
+    r = run(make_repo("declared-cased-key", {WORKFLOW: cased}), env=declared)
+    check(r.returncode == 1 and f"{WORKFLOW}:10: " in r.stdout, "an input written in another case than the declared name is read the same: GitHub matches input names without regard to case", r.stdout + r.stderr)
+    r = run(make_repo("declared-cased-name", {WORKFLOW: workflow(wrapper_step)}), env=dict(clean_env(), EXECUTED_INPUTS="BUILD-COMMAND"))
+    check(r.returncode == 1 and f"{WORKFLOW}:10: " in r.stdout, "a name declared in another case than the input is read the same", r.stdout + r.stderr)
     two_names = dict(clean_env(), EXECUTED_INPUTS="other-command\nbuild-command")
     r = run(make_repo("declared-two", {WORKFLOW: workflow(wrapper_step)}), env=two_names)
     check(r.returncode == 1 and "with.build-command" in r.stdout, "several declared names, separated by a line break, are all read", r.stdout + r.stderr)
@@ -207,15 +216,16 @@ try:
     # the self-test stops the check when one class is removed from it
     source = CHECK.read_text(encoding="utf-8")
     mutations = {
-        "with.script dropped": ('values.append(("with.script", inputs.get("script"), span_in(inputs, "script")))', "pass"),
+        "with.script dropped": ('values.extend(input_values(inputs, "script"))', "pass"),
+        "input names compared with case": ("key.lower() == name.lower()", "key == name"),
         "composite shell dropped": ('values.append(("shell:", step.get("shell"), span_in(step, "shell")))', "pass"),
-        "docker args dropped": ('values.append(("with.args", inputs.get("args"), span_in(inputs, "args")))', "pass"),
+        "docker args dropped": ('values.extend(input_values(inputs, "args"))', "pass"),
         "job default shell dropped": ("if holds_expression(shell):", "if False:"),
         "line off by one": ('return text.count("\\n", 0, position) + 1', 'return text.count("\\n", 0, position)'),
         "block scalar line lost (the value's first line only)": ("position = text.find(EXPRESSION_OPENING, first, last)", "position = first"),
         "line breaks not normalised": ('return text.replace("\\r\\n", "\\n").replace("\\r", "\\n")', "return text"),
         "lines counted by splitlines": ('return text.count("\\n", 0, position) + 1', 'return len(text[:position].replace("\\n", "\\n#").splitlines())'),
-        "declared inputs dropped": ('values.append((f"with.{name}", inputs[name], span_in(inputs, name)))', "pass"),
+        "declared inputs dropped": ("            values.extend(input_values(inputs, name))", "            pass"),
         "composite actions dropped": ('if isinstance(runs, dict) and isinstance(runs.get("steps"), list):\n        found.append(("composite action", runs["steps"], True))', "pass"),
     }
     for label, (old, new) in mutations.items():
