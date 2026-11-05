@@ -542,9 +542,11 @@ def self_test_printable() -> None:
 
 
 def main(argv: list[str]) -> int:
-    # A console whose code page cannot encode a character of a name must not end the run in a traceback that hides the findings.
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(errors="backslashreplace")
+    # A console whose code page cannot encode a character of a name must not end the run in a traceback that hides the findings,
+    # on either stream: a message of a failed self-test goes to stderr.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(errors="backslashreplace")
     self_test()
     self_test_printable()
 
