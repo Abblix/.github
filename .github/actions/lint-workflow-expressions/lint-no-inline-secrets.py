@@ -157,8 +157,11 @@ def token_line(span: Span | None, text: str | None) -> int | None:
 
 
 def input_values(inputs: dict, name: str) -> list[tuple[str, object, Span | None]]:
-    """The values of the with: keys that name the input `name`. GitHub matches input names without regard to case, so `Script:` is `script:`."""
-    return [(f"with.{name}", inputs[key], span_in(inputs, key)) for key in inputs if isinstance(key, str) and key.lower() == name.lower()]
+    """The values of the with: keys that name the input `name`, each labelled with its key as written in the file.
+
+    GitHub matches input names without regard to case, so `Script:` is `script:`. The label is the key as the file spells it,
+    so that a search for the label in the file finds the line."""
+    return [(f"with.{key}", inputs[key], span_in(inputs, key)) for key in inputs if isinstance(key, str) and key.lower() == name.lower()]
 
 
 def unmatched_inputs(executed_inputs: tuple[str, ...], seen: set[str]) -> list[str]:

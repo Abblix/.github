@@ -188,8 +188,10 @@ try:
     cased = workflow("        uses: some/wrapper@v1\n        with:\n          Build-Command: docker build --build-arg \"X=${{ github.run_id }}\" .")
     r = run(make_repo("declared-cased-key", {WORKFLOW: cased}), env=declared)
     check(r.returncode == 1 and f"{WORKFLOW}:10: " in r.stdout, "an input written in another case than the declared name is read the same: GitHub matches input names without regard to case", r.stdout + r.stderr)
+    check("with.Build-Command" in r.stdout and "with.build-command" not in r.stdout, "the finding labels the key as the file spells it, not as it was declared", r.stdout)
     r = run(make_repo("declared-cased-name", {WORKFLOW: workflow(wrapper_step)}), env=dict(clean_env(), EXECUTED_INPUTS="BUILD-COMMAND"))
-    check(r.returncode == 1 and f"{WORKFLOW}:10: " in r.stdout, "a name declared in another case than the input is read the same", r.stdout + r.stderr)
+    check(r.returncode == 1 and f"{WORKFLOW}:10: " in r.stdout and "with.build-command" in r.stdout and "with.BUILD-COMMAND" not in r.stdout,
+          "a name declared in another case than the input is read the same, and the finding labels the key of the file", r.stdout + r.stderr)
     # a declared name that no step sets protects nothing: the run fails and names it, and a name that is set passes beside it
     r = run(make_repo("declared-unmatched", {WORKFLOW: workflow("        run: echo hello")}), env=declared)
     check(r.returncode == 1 and "build-command" in r.stdout and "set by no step" in r.stdout, "a declared name that no step sets fails the run and is named", r.stdout + r.stderr)
