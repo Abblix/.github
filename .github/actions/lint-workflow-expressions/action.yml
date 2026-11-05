@@ -1,0 +1,39 @@
+name: Lint workflow expressions
+description: >-
+  Fail when a workflow or an action in the calling repository puts a GitHub Actions expression
+  (the template token: a dollar sign and two opening braces) inside a value the runner executes
+  as program text. Those values are run:, a composite step's shell:, a job's defaults.run.shell,
+  with.script of github-script, with.args and with.entrypoint of a docker:// step, and runs.args
+  of a Docker action.
+
+  GitHub substitutes the expression before the program parses the text, so a value with a quote
+  or a backtick in it becomes code. The rule is the whole check: no expression in those values,
+  whatever it reads. A list of dangerous contexts can never be complete, because secrets['X'] and
+  toJSON(secrets) read the same values under spellings a list misses.
+
+  The check reads the files git tracks in the calling repository: the workflows at the top of
+  .github/workflows and every action.yml or action.yaml under .github, at any depth. It fails when
+  it finds none, so an empty sweep cannot pass for a clean one. Before it looks at the repository it
+  tests itself: a planted expression of every class must be found and a clean one must not be
+  flagged, or it stops and says which.
+
+  The calling job needs the repository checked out, because git ls-files reads its index, and
+  python3 with PyYAML on the runner.
+
+inputs:
+  root:
+    description: Repository root to read, relative to the job's working directory.
+    required: false
+    default: '.'
+
+runs:
+  using: composite
+  steps:
+    - name: Refuse expressions inside executed values
+      shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        LINT_ROOT: ${{ inputs.root }}
+      run: |
+        set -euo pipefail
+        python3 "${ACTION_PATH}/lint-no-inline-secrets.py" "$LINT_ROOT"

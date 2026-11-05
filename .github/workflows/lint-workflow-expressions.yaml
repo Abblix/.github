@@ -1,0 +1,48 @@
+name: Lint workflow expressions
+
+# Runs the tests of the lint-workflow-expressions action and then the action on this repository.
+# The path lists of push and pull_request must match: without a filter on push this would run on every
+# commit, and with different lists a push could pass a change that its pull request had not seen.
+on:
+  pull_request:
+    paths:
+      - '.github/actions/lint-workflow-expressions/**'
+      - '.github/workflows/**'
+  push:
+    branches: [master]
+    paths:
+      - '.github/actions/lint-workflow-expressions/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lint-workflow-expressions-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests and self-check
+    # A GitHub-hosted runner on purpose: this repository is public, and a pull request from a fork
+    # runs its code on whatever runner the job names.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
+        timeout-minutes: 3
+
+      # The tests plant each class of violation in a throwaway repository and expect the check to refuse it,
+      # then remove a class from a copy of the check and expect its self-test to stop.
+      - name: Test the check
+        run: python3 .github/actions/lint-workflow-expressions/test-lint-no-inline-secrets.py
+        timeout-minutes: 3
+
+      - name: Run the action on this repository
+        uses: ./.github/actions/lint-workflow-expressions
+        timeout-minutes: 3
